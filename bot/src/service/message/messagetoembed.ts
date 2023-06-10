@@ -14,7 +14,7 @@ export class MessageToEmbed {
                 !message.channel.isDMBased()
             ) {
                 embedBuilder.setTitle(
-                    `Message from ${guild.name}#${message.channel.name}`
+                    `Message from ${guild.name} #${message.channel.name}`
                 );
             } else {
                 embedBuilder.setTitle(`Message from ${guild.name}`);
