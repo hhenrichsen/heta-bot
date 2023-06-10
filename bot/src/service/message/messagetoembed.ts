@@ -24,7 +24,11 @@ export class MessageToEmbed {
         embedBuilder.setURL(message.url);
         embedBuilder.setDescription(message.content);
         embedBuilder.setAuthor({
-            name: message.author.tag,
+            name:
+                message.author.username +
+                (message.author.discriminator != '0'
+                    ? `#${message.author.discriminator}`
+                    : ''),
             iconURL: message.author.displayAvatarURL({
                 size: 64,
             }),
