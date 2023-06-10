@@ -1,4 +1,5 @@
 import {
+    Column,
     CreateDateColumn,
     Entity,
     PrimaryColumn,
@@ -25,6 +26,12 @@ export class Guild {
 
     @VersionColumn()
     version = 0;
+
+    @Column('varchar', { length: 32 })
+    bookmarkEmoji = '🔖';
+
+    @Column('bool')
+    bookmarkEnabled = true;
 }
 
 // Inject so we can retrieve this model when we create the connection.
