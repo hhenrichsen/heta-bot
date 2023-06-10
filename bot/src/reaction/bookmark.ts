@@ -1,11 +1,8 @@
 import {
     ActionRowBuilder,
     ButtonBuilder,
-    ButtonStyle,
     Client,
-    ComponentType,
-    EmbedBuilder,
-    MessageComponentInteraction,
+    DiscordAPIError,
     MessageReaction,
     User,
 } from 'discord.js';
@@ -16,13 +13,15 @@ import { unpartial } from '../util/unpartial';
 import { DeleteResponse } from '../interactionresponse/deleteresponse';
 import { Service } from 'typedi';
 import Logger from 'bunyan';
+import { SentryService } from '../service/error/sentryservice';
 
 @Service()
 export class Bookmark extends ReactionResponse {
     constructor(
         private readonly messageToEmbed: MessageToEmbed,
         private readonly deleteResponse: DeleteResponse,
-        private readonly logger: Logger
+        private readonly logger: Logger,
+        private readonly sentry: SentryService
     ) {
         super();
     }
@@ -56,7 +55,8 @@ export class Bookmark extends ReactionResponse {
         client: Client,
         reaction: MessageReaction,
         user: User,
-        guild?: Guild | undefined
+        guild?: Guild | undefined,
+        ignoreReactions = false
     ): Promise<void> {
         const [embed, attachments] = this.messageToEmbed.convert(
             await unpartial(reaction.message)
@@ -69,10 +69,19 @@ export class Bookmark extends ReactionResponse {
             this.deleteResponse.button
         );
 
-        user.send({
-            embeds: [embed],
-            files: attachments,
-            components: [buttonRow],
-        });
+        try {
+            await user.send({
+                embeds: [embed],
+                files: ignoreReactions ? undefined : attachments,
+                components: [buttonRow],
+            });
+        } catch (error) {
+            if (error instanceof DiscordAPIError) {
+                if (error.code == 413 && !ignoreReactions) {
+                    return this.run(client, reaction, user, guild, true);
+                }
+            }
+            this.sentry.handleError(error);
+        }
     }
 }
