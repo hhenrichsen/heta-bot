@@ -10,7 +10,7 @@ FROM node:18-alpine
 ENV NODE_ENV=production
 WORKDIR /app
 COPY package*.json ./
-COPY . .
 RUN npm install
+COPY . .
 COPY --from=builder /app/dist dist
 CMD [ "node", "dist/main.js" ]
