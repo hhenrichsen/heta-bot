@@ -1,5 +1,5 @@
 import { Service } from 'typedi';
-import Sentry from '@sentry/node';
+import * as Sentry from '@sentry/node';
 import { Environment } from '../environment';
 
 @Service()
