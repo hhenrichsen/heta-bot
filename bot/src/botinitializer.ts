@@ -12,6 +12,7 @@ export class BotInitializer {
     ) {}
 
     public async init() {
+        this.logger.debug('Using debug logger');
         this.logger.info('Connecting to database...');
         const dataSource = this.dataSourceFactory.create();
         await dataSource.initialize();

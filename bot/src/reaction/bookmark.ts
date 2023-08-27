@@ -6,7 +6,6 @@ import {
     MessageReaction,
     User,
 } from 'discord.js';
-import { Guild } from '../entities/guild.entity';
 import { ReactionResponse } from './reaction';
 import { MessageToEmbed } from '../service/message/messagetoembed';
 import { unpartial } from '../util/unpartial';
@@ -14,6 +13,7 @@ import { DeleteResponse } from '../interactionresponse/deleteresponse';
 import { Service } from 'typedi';
 import Logger from 'bunyan';
 import { SentryService } from '../service/error/sentryservice';
+import { Guild } from '../service/guild/guild';
 
 @Service()
 export class Bookmark extends ReactionResponse {
@@ -32,23 +32,17 @@ export class Bookmark extends ReactionResponse {
         user: User,
         guild?: Guild | undefined
     ): boolean | Promise<boolean> {
+        this.logger.debug('Checking if should handle bookmark reaction');
         if (!guild) {
             this.logger.debug(
                 `Skipping handling reaction ${reaction.emoji.name} in ${reaction.message.channel}: no guild`
             );
             return false;
         }
-        if (
-            guild.bookmarkEnabled &&
-            (reaction.emoji.name == guild.bookmarkEmoji ||
-                reaction.emoji.id == guild.bookmarkEmoji)
-        ) {
-            return true;
+        if (!guild.shouldBookmark(reaction.emoji.name, reaction.emoji.id)) {
+            return false;
         }
-        this.logger.debug(
-            `Skipping handling reaction ${reaction.emoji.name} in ${reaction.message.channel}: wrong emoji`
-        );
-        return false;
+        return true;
     }
 
     public async run(
@@ -60,10 +54,6 @@ export class Bookmark extends ReactionResponse {
     ): Promise<void> {
         const [embed, attachments] = this.messageToEmbed.convert(
             await unpartial(reaction.message)
-        );
-
-        this.logger.debug(
-            `Skipping handling reaction ${reaction.emoji.name} in ${reaction.message.channel}: wrong emoji`
         );
         const buttonRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
             this.deleteResponse.button

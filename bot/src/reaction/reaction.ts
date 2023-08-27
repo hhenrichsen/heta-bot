@@ -1,5 +1,6 @@
 import { Client, MessageReaction, User } from 'discord.js';
-import { Guild } from '../entities/guild.entity';
+import { GuildEntity } from '../entities/guild.entity';
+import { Guild } from '../service/guild/guild';
 
 export abstract class ReactionResponse {
     public abstract shouldHandle(
