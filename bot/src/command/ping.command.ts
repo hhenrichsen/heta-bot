@@ -4,8 +4,6 @@ import { Command } from './command';
 
 @Service()
 export class PingCommand extends Command {
-    public readonly type = PingCommand;
-
     declaration = new SlashCommandBuilder()
         .setName('ping')
         .setDescription('Checks if the bot is working')

@@ -41,6 +41,12 @@ export class GuildEntity {
 
     @Column('int', { default: 3 })
     pinThreshold = 3;
+
+    @Column('varchar', { length: 32, nullable: true })
+    channelCategoryId: string | null = null;
+
+    @Column('bool', { default: false })
+    channelsEnabled: boolean = false;
 }
 
 // Inject so we can retrieve this model when we create the connection.

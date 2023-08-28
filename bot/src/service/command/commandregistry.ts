@@ -1,13 +1,14 @@
 import { Service } from 'typedi';
 import { Command } from '../../command/command';
 import { PingCommand } from '../../command/ping.command';
+import { JoinCommand } from '../../command/join.command';
 
 @Service()
 export class CommandRegistry {
     private readonly commands: Map<string, Command> = new Map();
 
-    constructor(pingCommand: PingCommand) {
-        const commands = [pingCommand];
+    constructor(pingCommand: PingCommand, joinCommand: JoinCommand) {
+        const commands = [pingCommand, joinCommand];
         commands.forEach((command) =>
             this.commands.set(command.declaration.name, command)
         );

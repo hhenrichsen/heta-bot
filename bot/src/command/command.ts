@@ -1,16 +1,18 @@
 import {
-    CacheType,
+    AutocompleteInteraction,
     ChatInputCommandInteraction,
     RESTPostAPIApplicationCommandsJSONBody,
 } from 'discord.js';
-import { Constructor } from '../types/constructor';
-import { GuildEntity } from '../entities/guild.entity';
+import { Guild } from '../service/guild/guild';
 
 export abstract class Command {
     public abstract readonly declaration: RESTPostAPIApplicationCommandsJSONBody;
-    protected abstract type: Constructor<Command>;
     public abstract run(
-        interaction: ChatInputCommandInteraction<CacheType>,
-        guild?: GuildEntity | undefined
+        interaction: ChatInputCommandInteraction,
+        guild?: Guild | undefined
     ): Promise<void> | void;
+    public autocomplete(
+        interaction: AutocompleteInteraction,
+        guild?: Guild | undefined
+    ): Promise<void> | void { };
 }

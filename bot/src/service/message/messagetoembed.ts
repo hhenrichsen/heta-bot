@@ -1,8 +1,12 @@
 import { Attachment, EmbedBuilder, Message } from 'discord.js';
 import { Service } from 'typedi';
+import { unpartial } from '../../util/unpartial';
+import Logger from 'bunyan';
 
 @Service()
 export class MessageToEmbed {
+    constructor(private readonly logger: Logger) { }
+
     public convert(message: Message): [EmbedBuilder, Attachment[]] {
         const embedBuilder = new EmbedBuilder();
 
@@ -21,8 +25,14 @@ export class MessageToEmbed {
             }
         }
 
-        embedBuilder.setURL(message.url);
-        embedBuilder.setDescription(message.content);
+        this.logger.info(message);
+        message.url && embedBuilder.setURL(message.url);
+        if (message.content) {
+            embedBuilder.setDescription(message.content);
+        }
+        else {
+            embedBuilder.setDescription('*(no content)*\n\nThis may be an indication that the server has opted not to share message content with Heta.')
+        }
         embedBuilder.setAuthor({
             name:
                 message.author.username +
