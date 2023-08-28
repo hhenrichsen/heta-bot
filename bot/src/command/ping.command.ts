@@ -1,4 +1,8 @@
-import { CacheType, Interaction, SlashCommandBuilder } from 'discord.js';
+import {
+    CacheType,
+    ChatInputCommandInteraction,
+    SlashCommandBuilder,
+} from 'discord.js';
 import { Service } from 'typedi';
 import { Command } from './command';
 
@@ -9,7 +13,9 @@ export class PingCommand extends Command {
         .setDescription('Checks if the bot is working')
         .toJSON();
 
-    async run(interaction: Interaction<CacheType>): Promise<void> {
+    async run(
+        interaction: ChatInputCommandInteraction<CacheType>
+    ): Promise<void> {
         if (!interaction.isChatInputCommand()) {
             return;
         }

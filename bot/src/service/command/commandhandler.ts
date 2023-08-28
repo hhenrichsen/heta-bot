@@ -1,5 +1,9 @@
 import Logger from 'bunyan';
-import { ChatInputCommandInteraction, CacheType, AutocompleteInteraction } from 'discord.js';
+import {
+    ChatInputCommandInteraction,
+    CacheType,
+    AutocompleteInteraction,
+} from 'discord.js';
 import { Service } from 'typedi';
 import { CommandRegistry } from './commandregistry';
 import { GuildRepository } from '../../repositories/guild.repository';
@@ -11,9 +15,11 @@ export class CommandHandler {
         private readonly logger: Logger,
         private readonly commandRegistry: CommandRegistry,
         private readonly guildService: GuildService
-    ) { }
+    ) {}
 
-    public async handle(interaction: ChatInputCommandInteraction | AutocompleteInteraction) {
+    public async handle(
+        interaction: ChatInputCommandInteraction | AutocompleteInteraction
+    ) {
         this.logger.debug(`Handling command ${interaction.commandName}`);
         const guild =
             (interaction.guildId &&
@@ -25,8 +31,7 @@ export class CommandHandler {
         if (command) {
             if (interaction.isAutocomplete()) {
                 command.autocomplete(interaction, guild);
-            }
-            else {
+            } else {
                 command.run(interaction, guild);
             }
         } else {

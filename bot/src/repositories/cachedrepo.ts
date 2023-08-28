@@ -15,6 +15,10 @@ export abstract class CachedRepo<T extends ObjectLiteral> {
         });
     }
 
+    public flush() {
+        this.cache.flushAll();
+    }
+
     protected async updateCache(id: string, value: T) {
         this.cache.set(id, value);
     }

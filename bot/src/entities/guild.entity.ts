@@ -46,7 +46,7 @@ export class GuildEntity {
     channelCategoryId: string | null = null;
 
     @Column('bool', { default: false })
-    channelsEnabled: boolean = false;
+    channelsEnabled = false;
 }
 
 // Inject so we can retrieve this model when we create the connection.

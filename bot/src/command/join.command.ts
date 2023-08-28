@@ -1,7 +1,15 @@
-import { AutocompleteInteraction, CacheType, ChannelType, DiscordAPIError, Interaction, SlashCommandBuilder, TextChannel } from 'discord.js';
+import {
+    AutocompleteInteraction,
+    CacheType,
+    ChannelType,
+    ChatInputCommandInteraction,
+    DiscordAPIError,
+    Interaction,
+    SlashCommandBuilder,
+    TextChannel,
+} from 'discord.js';
 import { Service } from 'typedi';
 import { Command } from './command';
-import { GuildService } from '../service/guild/guildservice';
 import { SentryService } from '../service/error/sentryservice';
 import { Guild } from '../service/guild/guild';
 import { Guild as DiscordGuild } from 'discord.js';
@@ -13,11 +21,12 @@ export class JoinCommand extends Command {
         .setName('join')
         .setDescription('join or create a channel')
         .setDMPermission(false)
-        .addStringOption((option) => option
-            .setName('name')
-            .setDescription('The name of the channel to join or create')
-            .setRequired(true)
-            .setAutocomplete(true)
+        .addStringOption((option) =>
+            option
+                .setName('name')
+                .setDescription('The name of the channel to join or create')
+                .setRequired(true)
+                .setAutocomplete(true)
         )
         .toJSON();
 
@@ -25,7 +34,10 @@ export class JoinCommand extends Command {
         super();
     }
 
-    private async getChannels(guild: Guild, discordGuild: DiscordGuild): Promise<readonly string[]> {
+    private async getChannels(
+        guild: Guild,
+        discordGuild: DiscordGuild
+    ): Promise<readonly string[]> {
         const catId = guild.getChannelCategoryId();
         if (!catId) {
             return [];
@@ -37,43 +49,62 @@ export class JoinCommand extends Command {
                 return [];
             }
             const fetchedCategory = await unpartial(category);
-            const channels = fetchedCategory.children.cache.filter((channel): channel is TextChannel =>
-                !!channel && channel.type == ChannelType.GuildText
+            const channels = fetchedCategory.children.cache.filter(
+                (channel): channel is TextChannel =>
+                    !!channel && channel.type == ChannelType.GuildText
             );
-            guild.setChannels(channels.map(channel => channel.name));
+            guild.setChannels(channels.map((channel) => channel.name));
         }
         return channels;
     }
 
-    public async autocomplete(interaction: AutocompleteInteraction<CacheType>, guild?: Guild | undefined): Promise<void> {
+    public async autocomplete(
+        interaction: AutocompleteInteraction<CacheType>,
+        guild?: Guild | undefined
+    ): Promise<void> {
         if (!guild || !interaction.guild) {
             return;
         }
-        const name = interaction.options.getString("name", true) ?? interaction.options.data[0] ?? '';
-        interaction.respond((await this.getChannels(guild, interaction.guild)).filter((channel) => channel.startsWith(name)).map(channel => ({ name: channel, value: channel })));
+        const name =
+            interaction.options.getString('name', true) ??
+            interaction.options.data[0] ??
+            '';
+        interaction.respond(
+            (await this.getChannels(guild, interaction.guild))
+                .filter((channel) => channel.startsWith(name))
+                .map((channel) => ({ name: channel, value: channel }))
+        );
     }
 
-    async run(interaction: Interaction<CacheType>, guild: Guild | undefined): Promise<void> {
+    async run(
+        interaction: ChatInputCommandInteraction<CacheType>,
+        guild: Guild | undefined
+    ): Promise<void> {
         if (!interaction.isChatInputCommand()) {
             return;
         }
 
-        const discordGuild = interaction.guild
-        if (!discordGuild || !guild || !guild.isChannelsEnabled()) {
+        const discordGuild = interaction.guild;
+        if (!discordGuild || !guild) {
             return;
+        }
+        if (!guild.isChannelsEnabled()) {
+            await interaction.reply({
+                ephemeral: true,
+                content: "Sorry, that's not enabled on this server.",
+            });
         }
         let channel: TextChannel | undefined;
 
         try {
-
             const name =
-                interaction.options.getString("name", true) ??
+                interaction.options.getString('name', true) ??
                 interaction.options.data[0];
 
             if (!name) {
                 await interaction.reply({
                     ephemeral: true,
-                    content: "Please give me a channel title.",
+                    content: 'Please give me a channel title.',
                 });
                 return;
             }
@@ -81,17 +112,19 @@ export class JoinCommand extends Command {
 
             const channels = await this.getChannels(guild, discordGuild);
 
-            channel = discordGuild.channels.cache.find((channel): channel is TextChannel =>
-                channel.name == channelName &&
-                channel.parentId == guild.getChannelCategoryId() &&
-                channel.type == ChannelType.GuildText
-            ) ?? await discordGuild.channels.create({
-                name: channelName,
-                parent: guild.getChannelCategoryId(),
-            });
+            channel =
+                discordGuild.channels.cache.find(
+                    (channel): channel is TextChannel =>
+                        channel.name == channelName &&
+                        channel.parentId == guild.getChannelCategoryId() &&
+                        channel.type == ChannelType.GuildText
+                ) ??
+                (await discordGuild.channels.create({
+                    name: channelName,
+                    parent: guild.getChannelCategoryId(),
+                }));
             guild.setChannels(new Set([...channels, channelName]));
-        }
-        catch (error) {
+        } catch (error) {
             if (error instanceof DiscordAPIError) {
                 if (error.status == 403) {
                     await interaction.reply({
@@ -106,7 +139,7 @@ export class JoinCommand extends Command {
             await interaction.reply({
                 ephemeral: true,
                 content: 'An error occurred while creating the channel.',
-            })
+            });
         }
 
         try {
@@ -119,8 +152,7 @@ export class JoinCommand extends Command {
                     ephemeral: true,
                 });
             }
-        }
-        catch (error) {
+        } catch (error) {
             if (error instanceof DiscordAPIError) {
                 if (error.status == 403) {
                     await interaction.reply({
@@ -135,7 +167,7 @@ export class JoinCommand extends Command {
             await interaction.reply({
                 ephemeral: true,
                 content: 'An error occurred while creating the channel.',
-            })
+            });
         }
     }
 }

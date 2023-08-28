@@ -75,7 +75,10 @@ export class Bot {
         });
 
         this.client.on('interactionCreate', (interaction) => {
-            if (interaction.isChatInputCommand() || interaction.isAutocomplete()) {
+            if (
+                interaction.isChatInputCommand() ||
+                interaction.isAutocomplete()
+            ) {
                 this.commandHandler.handle(interaction);
             } else {
                 this.interactionHandler.handle(this.client, interaction);

@@ -12,7 +12,7 @@ export class ReactHandler {
     constructor(
         private readonly guildService: GuildService,
         bookmark: BookmarkResponse,
-        pin: PinResponse,
+        pin: PinResponse
     ) {
         this.reactions = [bookmark, pin];
     }
@@ -23,11 +23,8 @@ export class ReactHandler {
         }
         const guild =
             (reaction.message.guildId &&
-                (await this.guildService.getGuild(
-                    reaction.message.guildId
-                ))) ||
+                (await this.guildService.getGuild(reaction.message.guildId))) ||
             undefined;
-        console.log(guild);
         for (const response of this.reactions) {
             if (await response.shouldHandle(client, reaction, user, guild)) {
                 return response.run(client, reaction, user, guild);
