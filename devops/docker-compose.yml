@@ -23,7 +23,7 @@ services:
     build:
       context: ../bot
       dockerfile: prod.dockerfile
-    command: npm run migrate
+    command: bun run migrate
     depends_on:
       - db
     environment:

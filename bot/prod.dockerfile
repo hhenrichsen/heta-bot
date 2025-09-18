@@ -1,16 +1,16 @@
-FROM node:18-alpine AS builder
+FROM oven/bun:1-alpine AS builder
 WORKDIR /app
-COPY package*.json ./
-RUN npm ci
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile
 COPY tsconfig*.json ./
 COPY src src
-RUN npm run build
+RUN bun run build
 
-FROM node:18-alpine
+FROM oven/bun:1-alpine
 ENV NODE_ENV=production
 WORKDIR /app
-COPY package*.json ./
-RUN npm install --omit=dev
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile --production
 COPY . .
 COPY --from=builder /app/dist dist
-CMD [ "node", "dist/main.js" ]
+CMD [ "bun", "run", "dist/main.js" ]
