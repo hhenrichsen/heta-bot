@@ -1,11 +1,10 @@
 import { Attachment, EmbedBuilder, Message } from 'discord.js';
 import { Service } from 'typedi';
-import { unpartial } from '../../util/unpartial';
 import Logger from 'bunyan';
 
 @Service()
 export class MessageToEmbed {
-    constructor(private readonly logger: Logger) { }
+    constructor(private readonly logger: Logger) {}
 
     public convert(message: Message): [EmbedBuilder, Attachment[]] {
         const embedBuilder = new EmbedBuilder();
@@ -18,7 +17,7 @@ export class MessageToEmbed {
                 !message.channel.isDMBased()
             ) {
                 embedBuilder.setTitle(
-                    `Message from ${guild.name} #${message.channel.name}`
+                    `Message from ${guild.name} #${message.channel.name}`,
                 );
             } else {
                 embedBuilder.setTitle(`Message from ${guild.name}`);
@@ -26,12 +25,15 @@ export class MessageToEmbed {
         }
 
         this.logger.info(message);
-        message.url && embedBuilder.setURL(message.url);
+        if (message.url) {
+            embedBuilder.setURL(message.url);
+        }
         if (message.content) {
             embedBuilder.setDescription(message.content);
-        }
-        else {
-            embedBuilder.setDescription('*(no content)*\n\nThis may be an indication that the server has opted not to share message content with Heta.')
+        } else {
+            embedBuilder.setDescription(
+                '*(no content)*\n\nThis may be an indication that the server has opted not to share message content with Heta.',
+            );
         }
         embedBuilder.setAuthor({
             name:

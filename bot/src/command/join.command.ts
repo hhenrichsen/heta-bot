@@ -4,7 +4,6 @@ import {
     ChannelType,
     ChatInputCommandInteraction,
     DiscordAPIError,
-    Interaction,
     SlashCommandBuilder,
     TextChannel,
 } from 'discord.js';
@@ -26,7 +25,7 @@ export class JoinCommand extends Command {
                 .setName('name')
                 .setDescription('The name of the channel to join or create')
                 .setRequired(true)
-                .setAutocomplete(true)
+                .setAutocomplete(true),
         )
         .toJSON();
 
@@ -36,7 +35,7 @@ export class JoinCommand extends Command {
 
     private async getChannels(
         guild: Guild,
-        discordGuild: DiscordGuild
+        discordGuild: DiscordGuild,
     ): Promise<readonly string[]> {
         const catId = guild.getChannelCategoryId();
         if (!catId) {
@@ -51,7 +50,7 @@ export class JoinCommand extends Command {
             const fetchedCategory = await unpartial(category);
             const channels = fetchedCategory.children.cache.filter(
                 (channel): channel is TextChannel =>
-                    !!channel && channel.type == ChannelType.GuildText
+                    !!channel && channel.type == ChannelType.GuildText,
             );
             guild.setChannels(channels.map((channel) => channel.name));
         }
@@ -60,7 +59,7 @@ export class JoinCommand extends Command {
 
     public async autocomplete(
         interaction: AutocompleteInteraction<CacheType>,
-        guild?: Guild | undefined
+        guild?: Guild | undefined,
     ): Promise<void> {
         if (!guild || !interaction.guild) {
             return;
@@ -72,13 +71,13 @@ export class JoinCommand extends Command {
         interaction.respond(
             (await this.getChannels(guild, interaction.guild))
                 .filter((channel) => channel.startsWith(name))
-                .map((channel) => ({ name: channel, value: channel }))
+                .map((channel) => ({ name: channel, value: channel })),
         );
     }
 
     async run(
         interaction: ChatInputCommandInteraction<CacheType>,
-        guild: Guild | undefined
+        guild: Guild | undefined,
     ): Promise<void> {
         if (!interaction.isChatInputCommand()) {
             return;
@@ -117,7 +116,7 @@ export class JoinCommand extends Command {
                     (channel): channel is TextChannel =>
                         channel.name == channelName &&
                         channel.parentId == guild.getChannelCategoryId() &&
-                        channel.type == ChannelType.GuildText
+                        channel.type == ChannelType.GuildText,
                 ) ??
                 (await discordGuild.channels.create({
                     name: channelName,
