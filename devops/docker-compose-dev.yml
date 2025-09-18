@@ -1,7 +1,7 @@
-version: '2'
+version: "2"
 services:
   adminer:
-    image: 'adminer'
+    image: "adminer"
     depends_on:
       - db
     ports:
@@ -12,39 +12,11 @@ services:
       - db:db
 
   db:
-    image: 'postgres:11'
+    image: "postgres:17"
     environment:
       POSTGRES_PASSWORD: password
     volumes:
       - ../data/dev/db:/var/lib/postgresql
       - ./dev/initdb:/docker-entrypoint-initdb.d:ro
-
-  migrator:
-    build:
-      context: ../bot
-      dockerfile: dev.dockerfile
-    volumes:
-      - ../bot:/app
-    command: npx nodemon --legacy-watch --watch src/migrations -e ts --exec "npm run migrate" --polling-interval 5000
-    depends_on:
-      - db
-    environment:
-      DATABASE_URL: mysql://postgres:password@db:5432/migrate
-      MIGRATE_DATABASE_URL: mysql://postgres:password@db:5432/migrate
-
-  bot:
-    build:
-      context: ../bot
-      dockerfile: dev.dockerfile
-    volumes:
-      - ../bot:/app
-      - /app/node_modules 
-    command: npm run dev
-    depends_on:
-      - db
-      - migrator
-    env_file:
-      - ../.env
-    environment:
-      DATABASE_URL: mysql://postgres:password@db:5432/bot
-      MIGRATE_DATABASE_URL: mysql://postgres:password@db:5432/migrate
+    ports:
+      - 5432:5432

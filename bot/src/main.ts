@@ -18,7 +18,7 @@ Container.set(
             process.env['NODE_ENV']?.toLowerCase() != 'production'
                 ? 'debug'
                 : 'info',
-    })
+    }),
 );
 
 Container.get(BotInitializer).init();

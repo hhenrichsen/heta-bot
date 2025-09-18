@@ -12,13 +12,13 @@ const dataSource = new DataSource({
         // We use the injector to accomplish this in the app, but need this
         // here to find entities, too.
         ...glob
-            .sync('./src/**/*.entity.ts')
+            .sync('./src/**/*.entity.js')
             .map((file) => Object.values(require(file)))
             .flat(),
     ],
     migrations: [
         ...glob
-            .sync('./src/migrations/*.ts')
+            .sync('./src/migrations/*.js')
             .map((file) => Object.values(require(file)))
             .flat(),
     ],

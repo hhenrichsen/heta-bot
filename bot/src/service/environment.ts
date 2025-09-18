@@ -8,7 +8,7 @@ export class Environment {
     public get<T = string>(
         key: string,
         def?: T | undefined,
-        parse?: (value: string) => T | undefined
+        parse?: (value: string) => T | undefined,
     ): T | string | undefined {
         if (key in process.env) {
             const value = process.env[key];

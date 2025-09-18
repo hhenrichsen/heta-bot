@@ -20,11 +20,11 @@ export class Bot {
         private readonly commandRegistry: CommandRegistry,
         private readonly commandHandler: CommandHandler,
         private readonly reactHandler: ReactHandler,
-        private readonly interactionHandler: InteractionHandler
+        private readonly interactionHandler: InteractionHandler,
     ) {
         if (!BOT_TOKEN) {
             throw new Error(
-                'BOT_TOKEN was not set, bot cannot be initialized.'
+                'BOT_TOKEN was not set, bot cannot be initialized.',
             );
         }
         this.token = BOT_TOKEN;
@@ -64,7 +64,7 @@ export class Bot {
             this.logger.info(`Registered ${commands.length} commands.`);
         } else {
             this.logger.warn(
-                'No BOT_CLIENT_ID provided; slash commands may not work.'
+                'No BOT_CLIENT_ID provided; slash commands may not work.',
             );
         }
     }
@@ -91,7 +91,7 @@ export class Bot {
                 const reaction = await unpartial(possibleReaction);
                 const user = await unpartial(possibleUser);
                 this.reactHandler.handle(this.client, reaction, user);
-            }
+            },
         );
     }
 }

@@ -4,6 +4,7 @@ import { ReactionResponse } from '../../reaction/reaction';
 import { Bookmark as BookmarkResponse } from '../../reaction/bookmark';
 import { GuildService } from '../guild/guildservice';
 import { PinResponse } from '../../reaction/pin';
+import { LinkResponse } from '../../reaction/link';
 
 @Service()
 export class ReactHandler {
@@ -12,9 +13,10 @@ export class ReactHandler {
     constructor(
         private readonly guildService: GuildService,
         bookmark: BookmarkResponse,
-        pin: PinResponse
+        pin: PinResponse,
+        link: LinkResponse,
     ) {
-        this.reactions = [bookmark, pin];
+        this.reactions = [bookmark, pin, link];
     }
 
     public async handle(client: Client, reaction: MessageReaction, user: User) {
