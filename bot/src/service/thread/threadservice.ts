@@ -2,11 +2,9 @@ import { Service } from 'typedi';
 import Logger from 'bunyan';
 import {
     ChannelType,
-    Client,
     DiscordAPIError,
     EmbedBuilder,
     Message,
-    PartialMessage,
     TextChannel,
     ThreadChannel,
 } from 'discord.js';
@@ -142,6 +140,22 @@ export class ThreadService {
         } catch (error) {
             this.logger.error('Error sending success embed:', error);
         }
+    }
+
+    public generateSafeThreadName(title: string): string {
+        // Clean up the title for use as a thread name
+        const cleanTitle = title
+            .replace(/[^\w\s-_.()]/g, '') // Keep only alphanumeric, spaces, hyphens, underscores, dots, and parentheses
+            .replace(/\s+/g, ' ') // Replace multiple spaces with single space
+            .trim()
+            .substring(0, 100); // Discord's limit is 100 characters
+
+        // Ensure we have a valid name (1-100 characters)
+        if (cleanTitle.length === 0) {
+            return 'Scraped Content';
+        }
+
+        return cleanTitle;
     }
 
     public generateSafeFilename(

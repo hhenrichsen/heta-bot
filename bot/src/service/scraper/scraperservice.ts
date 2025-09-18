@@ -2,6 +2,12 @@ import { Service } from 'typedi';
 import Logger from 'bunyan';
 import * as cheerio from 'cheerio';
 import TurndownService from 'turndown';
+import { ExpressiveCodeProcessor } from './processors/expressive-code-processor';
+import { PrismCodeBlockProcessor } from './processors/prism-code-block-processor';
+import { AstroCodeBlockProcessor } from './processors/astro-code-block-processor';
+import { CodeBlockDirectProcessor } from './processors/code-block-direct-processor';
+import { InlineCodeProcessor } from './processors/inline-code-processor';
+import { CodeBlockWithLanguageProcessor } from './processors/code-block-with-language-processor';
 
 export interface ScrapedContent {
     title: string;
@@ -18,7 +24,15 @@ export interface ScrapedContent {
 export class ScraperService {
     private turndown: TurndownService;
 
-    constructor(private readonly logger: Logger) {
+    constructor(
+        private readonly logger: Logger,
+        private readonly expressiveCodeProcessor: ExpressiveCodeProcessor,
+        private readonly prismCodeBlockProcessor: PrismCodeBlockProcessor,
+        private readonly astroCodeBlockProcessor: AstroCodeBlockProcessor,
+        private readonly codeBlockDirectProcessor: CodeBlockDirectProcessor,
+        private readonly inlineCodeProcessor: InlineCodeProcessor,
+        private readonly codeBlockWithLanguageProcessor: CodeBlockWithLanguageProcessor,
+    ) {
         this.turndown = new TurndownService({
             headingStyle: 'atx',
             bulletListMarker: '-',
@@ -291,186 +305,69 @@ export class ScraperService {
     }
 
     private setupCustomTurndownRules(): void {
-        // Add rule for code blocks with language detection
-        this.turndown.addRule('codeBlockWithLanguage', {
-            filter: (node: Node) => {
-                return (
-                    node.nodeName === 'PRE' &&
-                    (node as Element).querySelector('code') !== null
-                );
-            },
-            replacement: (content: string, node: Node) => {
-                const element = node as Element;
-                const codeElement = element.querySelector('code');
-                if (!codeElement) return content;
-
-                const language = this.detectCodeLanguage(codeElement);
-                const code = codeElement.textContent || '';
-
-                return `\n\`\`\`${language}\n${code}\n\`\`\`\n`;
-            },
-        });
-
-        // Add rule for inline code
-        this.turndown.addRule('inlineCode', {
-            filter: (node: Node) => {
-                return (
-                    node.nodeName === 'CODE' &&
-                    (node as Element).parentElement?.nodeName !== 'PRE'
-                );
-            },
-            replacement: (content: string) => {
-                return `\`${content}\``;
-            },
-        });
-    }
-
-    private detectCodeLanguage(codeElement: Element): string {
-        // Check for Prism.js classes (language-*)
-        const classList = Array.from(codeElement.classList);
-        const prismClass = classList.find((cls) => cls.startsWith('language-'));
-        if (prismClass) {
-            return prismClass.replace('language-', '');
-        }
-
-        // Check for highlight.js classes (hljs language-*)
-        const hljsClass = classList.find(
-            (cls) => cls.startsWith('hljs') && cls !== 'hljs',
-        );
-        if (hljsClass) {
-            return hljsClass.replace('hljs-', '');
-        }
-
-        // Check for data-language attribute
-        const dataLanguage = codeElement.getAttribute('data-language');
-        if (dataLanguage) {
-            return dataLanguage;
-        }
-
-        // Check for data-lang attribute
-        const dataLang = codeElement.getAttribute('data-lang');
-        if (dataLang) {
-            return dataLang;
-        }
-
-        // Check for class patterns like 'brush: language'
-        const brushClass = classList.find((cls) => cls.startsWith('brush:'));
-        if (brushClass) {
-            return brushClass.replace('brush:', '').trim();
-        }
-
-        // Check for syntax-* classes
-        const syntaxClass = classList.find((cls) => cls.startsWith('syntax-'));
-        if (syntaxClass) {
-            return syntaxClass.replace('syntax-', '');
-        }
-
-        // Check parent pre element for language classes
-        const preElement = codeElement.closest('pre');
-        if (preElement) {
-            const preClasses = Array.from(preElement.classList);
-            const prePrismClass = preClasses.find((cls) =>
-                cls.startsWith('language-'),
-            );
-            if (prePrismClass) {
-                return prePrismClass.replace('language-', '');
-            }
-
-            const preHljsClass = preClasses.find(
-                (cls) => cls.startsWith('hljs') && cls !== 'hljs',
-            );
-            if (preHljsClass) {
-                return preHljsClass.replace('hljs-', '');
-            }
-
-            const preDataLanguage = preElement.getAttribute('data-language');
-            if (preDataLanguage) {
-                return preDataLanguage;
-            }
-        }
-
-        // Try to detect language from content patterns
-        const content = codeElement.textContent || '';
-        const detectedLanguage = this.detectLanguageFromContent(content);
-        if (detectedLanguage) {
-            return detectedLanguage;
-        }
-
-        return ''; // No language detected
-    }
-
-    private detectLanguageFromContent(content: string): string | null {
-        const trimmedContent = content.trim();
-
-        // Common patterns for different languages
-        const patterns = [
-            { pattern: /^#!\/bin\/(bash|sh)/, language: 'bash' },
-            {
-                pattern: /^#!\/usr\/bin\/env\s+(python|python3)/,
-                language: 'python',
-            },
-            { pattern: /^#!\/usr\/bin\/env\s+node/, language: 'javascript' },
-            { pattern: /^import\s+.*from\s+['"]/, language: 'javascript' },
-            { pattern: /^const\s+\w+\s*=\s*\(/, language: 'javascript' },
-            { pattern: /^function\s+\w+\s*\(/, language: 'javascript' },
-            { pattern: /^class\s+\w+/, language: 'javascript' },
-            { pattern: /^def\s+\w+\s*\(/, language: 'python' },
-            { pattern: /^import\s+\w+/, language: 'python' },
-            { pattern: /^from\s+\w+\s+import/, language: 'python' },
-            { pattern: /^#include\s*<.*>/, language: 'cpp' },
-            { pattern: /^#include\s*".*"/, language: 'cpp' },
-            { pattern: /^using\s+namespace\s+std;/, language: 'cpp' },
-            { pattern: /^public\s+class\s+\w+/, language: 'java' },
-            { pattern: /^package\s+\w+;/, language: 'java' },
-            { pattern: /^import\s+java\./, language: 'java' },
-            { pattern: /^<\?php/, language: 'php' },
-            { pattern: /^<\?=/, language: 'php' },
-            { pattern: /^<!DOCTYPE\s+html/, language: 'html' },
-            { pattern: /^<html[^>]*>/, language: 'html' },
-            { pattern: /^<div[^>]*>/, language: 'html' },
-            { pattern: /^body\s*{/, language: 'css' },
-            { pattern: /^\.\w+\s*{/, language: 'css' },
-            { pattern: /^SELECT\s+.*FROM/i, language: 'sql' },
-            { pattern: /^INSERT\s+INTO/i, language: 'sql' },
-            { pattern: /^UPDATE\s+.*SET/i, language: 'sql' },
-            { pattern: /^DELETE\s+FROM/i, language: 'sql' },
-            { pattern: /^CREATE\s+TABLE/i, language: 'sql' },
-            { pattern: /^fn\s+\w+\s*\(/, language: 'rust' },
-            { pattern: /^use\s+\w+::/, language: 'rust' },
-            { pattern: /^go\s+func/, language: 'go' },
-            { pattern: /^package\s+main/, language: 'go' },
-            { pattern: /^import\s+\(/, language: 'go' },
+        // Register all the code block processors
+        const processors = [
+            this.expressiveCodeProcessor,
+            this.prismCodeBlockProcessor,
+            this.astroCodeBlockProcessor,
+            this.codeBlockDirectProcessor,
+            this.codeBlockWithLanguageProcessor,
+            this.inlineCodeProcessor,
         ];
 
-        for (const { pattern, language } of patterns) {
-            if (pattern.test(trimmedContent)) {
-                return language;
-            }
-        }
-
-        return null;
+        // Add rules from all processors
+        processors.forEach((processor) => {
+            const rule = processor.getRule();
+            this.turndown.addRule(processor.getRuleName(), rule);
+            this.logger.debug(
+                `Added turndown rule: ${processor.getRuleName()}`,
+            );
+        });
     }
 
     private cleanupMarkdown(markdown: string): string {
-        return (
-            markdown
-                // Remove excessive line breaks (more than 2 consecutive)
-                .replace(/\n{3,}/g, '\n\n')
-                // Fix spacing around headers
-                .replace(/\n(#{1,6})\s+/g, '\n$1 ')
-                // Fix spacing around lists
-                .replace(/\n(\s*[-*+])\s+/g, '\n$1 ')
-                // Fix spacing around code blocks
-                .replace(/\n(```[\s\S]*?```)\n/g, '\n\n$1\n\n')
-                // Remove trailing whitespace from lines
-                .replace(/[ \t]+$/gm, '')
-                // Ensure proper spacing around links
-                .replace(/([^!])\[([^\]]+)\]\(([^)]+)\)/g, '$1 [$2]($3)')
-                // Clean up multiple spaces
-                .replace(/[ \t]{2,}/g, ' ')
-                // Remove empty lines at start/end
-                .trim()
+        // First, protect code blocks from whitespace cleanup
+        const codeBlockRegex = /```[\s\S]*?```/g;
+        const codeBlocks: string[] = [];
+        let protectedMarkdown = markdown.replace(codeBlockRegex, (match) => {
+            const placeholder = `__CODE_BLOCK_${codeBlocks.length}__`;
+            codeBlocks.push(match);
+            return placeholder;
+        });
+
+        // Clean up the protected markdown
+        protectedMarkdown = protectedMarkdown
+            // Remove excessive line breaks (more than 2 consecutive)
+            .replace(/\n{3,}/g, '\n\n')
+            // Fix spacing around headers
+            .replace(/\n(#{1,6})\s+/g, '\n$1 ')
+            // Fix spacing around lists
+            .replace(/\n(\s*[-*+])\s+/g, '\n$1 ')
+            // Remove trailing whitespace from lines
+            .replace(/[ \t]+$/gm, '')
+            // Ensure proper spacing around links
+            .replace(/([^!])\[([^\]]+)\]\(([^)]+)\)/g, '$1 [$2]($3)')
+            // Clean up multiple spaces (but not in code blocks)
+            .replace(/[ \t]{2,}/g, ' ')
+            // Remove empty lines at start/end
+            .trim();
+
+        // Restore code blocks
+        let cleanedMarkdown = protectedMarkdown;
+        codeBlocks.forEach((codeBlock, index) => {
+            cleanedMarkdown = cleanedMarkdown.replace(
+                `__CODE_BLOCK_${index}__`,
+                codeBlock,
+            );
+        });
+
+        // Fix spacing around code blocks
+        cleanedMarkdown = cleanedMarkdown.replace(
+            /\n(```[\s\S]*?```)\n/g,
+            '\n\n$1\n\n',
         );
+
+        return cleanedMarkdown;
     }
 
     private extractAuthor($: cheerio.CheerioAPI): string | undefined {

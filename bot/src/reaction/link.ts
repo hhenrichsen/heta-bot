@@ -7,6 +7,7 @@ import { SentryService } from '../service/error/sentryservice';
 import { ScraperService } from '../service/scraper/scraperservice';
 import { MarkdownService } from '../service/markdown/markdownservice';
 import { ThreadService } from '../service/thread/threadservice';
+import { ContentSplitter } from '../service/scraper/content-splitter';
 
 @Service()
 export class LinkResponse extends ReactionResponse {
@@ -16,6 +17,7 @@ export class LinkResponse extends ReactionResponse {
         private readonly scraperService: ScraperService,
         private readonly markdownService: MarkdownService,
         private readonly threadService: ThreadService,
+        private readonly contentSplitter: ContentSplitter,
     ) {
         super();
     }
@@ -95,12 +97,16 @@ export class LinkResponse extends ReactionResponse {
 
             if (scrapedContents.length === 1) {
                 const content = scrapedContents[0];
-                threadName = content.title || 'Scraped Content';
+                threadName = this.threadService.generateSafeThreadName(
+                    content.title || 'Scraped Content'
+                );
                 filename = this.threadService.generateSafeFilename(
                     content.title || 'content',
                 );
             } else {
-                threadName = `Scraped Content (${scrapedContents.length} links)`;
+                threadName = this.threadService.generateSafeThreadName(
+                    `Scraped Content (${scrapedContents.length} links)`
+                );
                 filename = `scraped-content-${Date.now()}.md`;
             }
 
@@ -121,14 +127,35 @@ export class LinkResponse extends ReactionResponse {
             const markdown =
                 this.markdownService.createCombinedMarkdown(scrapedContents);
 
-            // Upload the markdown file
-            const success = await this.threadService.uploadMarkdownFile(
+            // Upload the intact markdown file first
+            const fileSuccess = await this.threadService.uploadMarkdownFile(
                 thread,
                 markdown,
                 filename,
             );
 
-            if (success) {
+            if (fileSuccess) {
+                // Also send the content as split messages for better readability
+                try {
+                    // Use the first scraped content's URL as the source for link resolution
+                    const sourceUrl =
+                        scrapedContents.length > 0
+                            ? scrapedContents[0].url
+                            : undefined;
+                    await this.contentSplitter.splitAndSendContent(
+                        markdown,
+                        thread,
+                        true,
+                        sourceUrl,
+                    );
+                } catch (error) {
+                    this.logger.error(
+                        'Error splitting and sending content as messages:',
+                        error,
+                    );
+                    // Don't fail the whole operation if message splitting fails
+                }
+
                 // Send success embed
                 await this.threadService.sendSuccessEmbed(
                     thread,
@@ -136,10 +163,10 @@ export class LinkResponse extends ReactionResponse {
                     urls.length,
                 );
             } else {
-                // Send error embed if no content was scraped
+                // Send error embed if file upload fails
                 await this.threadService.sendErrorEmbed(
                     thread,
-                    'No content could be scraped from the provided URLs.',
+                    'Failed to upload markdown file.',
                 );
             }
 
