@@ -898,9 +898,9 @@ export class ContentSplitter {
                     await thread.send(messageOptions);
                 }
 
-                // Add a small delay to avoid rate limiting
+                // Add a delay to avoid rate limiting and ensure images embed properly
                 if (i < chunks.length - 1) {
-                    await new Promise((resolve) => setTimeout(resolve, 100));
+                    await new Promise((resolve) => setTimeout(resolve, 1000));
                 }
             } catch (error) {
                 this.logger.error(

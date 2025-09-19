@@ -359,9 +359,6 @@ Check out [this link](./other-page.md) and [that link](../parent/file.md).
 
             for (let index = 0; index < chunks.length; index++) {
                 const chunk = chunks[index];
-                console.log('========================');
-                console.log(chunk.content);
-                console.log('========================');
                 expect(chunk.content.length).toBeLessThanOrEqual(2000);
                 expect(chunk.type).toBe(types[index]);
 
